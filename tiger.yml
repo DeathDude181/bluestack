@@ -1,0 +1,9 @@
+---
+- hosts: tiger
+  roles:
+    - common_win
+    - java
+    - nginx
+    - newrelic
+    - telegraf
+    - selenium

@@ -1,0 +1,80 @@
+---
+- name: Add nginx repo key
+  apt_key: url=http://nginx.org/keys/nginx_signing.key
+
+- name: Add nginx repo
+  apt_repository: repo="deb http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx" state=present
+
+- name: Add nginx-src repo
+  apt_repository: repo="deb-src http://nginx.org/packages/mainline/ubuntu/ {{ ansible_distribution_release }} nginx" state=present
+
+- name: Install nginx
+  apt: name=nginx update_cache=yes state=latest cache_valid_time=86400
+
+- name: Create directories
+  file: path={{ item }} owner=root group=root mode=755 state=directory
+  with_items:
+    - /etc/nginx/snippets
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+
+- name: Disable default site
+  file: path=/etc/nginx/sites-enabled/default state=absent
+  notify: reload nginx
+
+- name: Write default site
+  template: src=default.conf.j2 dest=/etc/nginx/sites-available/00-default.conf
+  notify: reload nginx
+
+- name: Link default site
+  file: src=/etc/nginx/sites-available/00-default.conf dest=/etc/nginx/sites-enabled/00-default.conf state=link
+  notify: reload nginx
+
+- name: Write nginx.conf
+  template: src=nginx.conf.j2 dest=/etc/nginx/nginx.conf
+  notify: restart nginx debian
+
+- name: Write ssl.conf
+  template: src=ssl.conf.j2 dest=/etc/nginx/conf.d/ssl.conf
+  notify: restart nginx debian
+
+- name: Write le.conf
+  template: src=le.conf.j2 dest=/etc/nginx/snippets/le.conf
+  register: leconf
+
+- name: Generate nginx dh params
+  command: openssl dhparam -outform pem -out /etc/ssl/certs/dhparam.pem 2048 creates=/etc/ssl/certs/dhparam.pem
+
+- name: Create htpasswd directory
+  file: path=/etc/nginx/htpasswd owner=root group=root mode=755 state=directory
+
+- name: Create htpasswd file
+  htpasswd: path=/etc/nginx/htpasswd/moe name={{ item.user }} password={{ item.pass }} owner=root group=www-data mode=0640
+  with_items: "{{ moe_passusers }}"
+  notify: reload nginx
+
+- name: Write moepass.conf
+  template: src=moepass.conf.j2 dest=/etc/nginx/snippets/moepass.conf
+  notify: reload nginx
+
+- name: Create acme directory
+  file: path=/var/www/acme/.well-known/acme-challenge owner=www-data group=www-data mode=775 state=directory
+
+- name: Ensure permissions
+  command: chmod -R 775 /var/www/acme
+
+- name: Ensure permissions
+  command: chown -R www-data:www-data /var/www/acme
+
+- name: Create renew script
+  template: src=lerestart.sh.j2 dest={{ le_hook_root }}/scripts/nginx mode=755
+
+- name: Restart nginx
+  service: name=nginx state=restarted
+  when: leconf.changed
+
+- name: Copy ufw conf
+  copy: src=ufw dest=/etc/ufw/applications.d/nginx
+
+- name: firewall allow nginx
+  command: ufw allow "Nginx Full"

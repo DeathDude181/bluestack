@@ -1,0 +1,4 @@
+---
+- include: windows.yml
+  tags: selenium
+  when: ansible_os_family == "Windows"

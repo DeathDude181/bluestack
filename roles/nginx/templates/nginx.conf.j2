@@ -1,61 +1,61 @@
 # {{ ansible_managed }}
 
-user {{ nginx.user }} {{ nginx.user }};
+user {{ nginx_user }} {{ nginx_user }};
 worker_processes  {{ ansible_processor_cores }};
 
-error_log  {{ nginx.log_dir }}/error.log;
-pid        {{ nginx.pid }};
+error_log  {{ nginx_log_dir }}/error.log;
+pid        {{ nginx_pid }};
 
 events {
-  worker_connections  {{ nginx.worker_connections }};
-{% if nginx.multi_accept %}
+  worker_connections  {{ nginx_worker_connections }};
+{% if nginx_multi_accept %}
   multi_accept on;
 {% endif %}
 
-{% if nginx.event %}
-  use {{ nginx.event }};
+{% if nginx_event %}
+  use {{ nginx_event }};
 {% endif %}
 }
 
 http {
-  include       {{ nginx.dir }}/mime.types;
+  include       {{ nginx_dir }}/mime.types;
   default_type  application/octet-stream;
 
-  {% if nginx.enable_access_log %}
-  access_log  {{ nginx.log_dir }}/access.log;
+  {% if nginx_enable_access_log %}
+  access_log  {{ nginx_log_dir }}/access.log;
   {% endif %}
 
-  sendfile {{ nginx.sendfile }};
+  sendfile {{ nginx_sendfile }};
   tcp_nopush on;
   tcp_nodelay on;
 
-  {% if nginx.keepalive_timeout %}
-  keepalive_timeout {{ nginx.keepalive_timeout }};
+  {% if nginx_keepalive_timeout %}
+  keepalive_timeout {{ nginx_keepalive_timeout }};
   {% endif %}
 
   server_tokens off;
 
-  gzip {{ nginx.gzip }};
-  {% if nginx.gzip %}
-  gzip_http_version {{ nginx.gzip_http_version }};
-  gzip_comp_level {{ nginx.gzip_comp_level }};
-  gzip_proxied {{ nginx.gzip_proxied }};
-  gzip_vary {{ nginx.gzip_vary }};
-  gzip_types {{ nginx.gzip_types|join(' ') }};
+  gzip {{ nginx_gzip }};
+  {% if nginx_gzip %}
+  gzip_http_version {{ nginx_gzip_http_version }};
+  gzip_comp_level {{ nginx_gzip_comp_level }};
+  gzip_proxied {{ nginx_gzip_proxied }};
+  gzip_vary {{ nginx_gzip_vary }};
+  gzip_types {{ nginx_gzip_types|join(' ') }};
   gzip_min_length  1000;
   gzip_disable     "msie6";
   {% endif %}
 
-  server_names_hash_bucket_size {{ nginx.server_names_hash_bucket_size }};
-  types_hash_max_size {{ nginx.types_hash_max_size }};
-  types_hash_bucket_size {{ nginx.types_hash_bucket_size }};
-  {% if nginx.proxy_read_timeout %}
-  proxy_read_timeout {{ nginx.proxy_read_timeout }};
+  server_names_hash_bucket_size {{ nginx_server_names_hash_bucket_size }};
+  types_hash_max_size {{ nginx_types_hash_max_size }};
+  types_hash_bucket_size {{ nginx_types_hash_bucket_size }};
+  {% if nginx_proxy_read_timeout %}
+  proxy_read_timeout {{ nginx_proxy_read_timeout }};
   {% endif %}
-  {% if nginx.client_max_body_size %}
-  client_max_body_size {{ nginx.client_max_body_size }};
+  {% if nginx_client_max_body_size %}
+  client_max_body_size {{ nginx_client_max_body_size }};
   {% endif %}
 
-  include {{ nginx.dir }}/conf.d/*.conf;
-  include {{ nginx.dir }}/sites-enabled/*;
+  include {{ nginx_dir }}/conf.d/*.conf;
+  include {{ nginx_dir }}/sites-enabled/*;
 }
